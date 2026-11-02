@@ -1,0 +1,51 @@
+{
+  "name": "plan2api",
+  "version": "0.1.0",
+  "description": "Turn your own logged-in Claude Code into a local API (unofficial, not affiliated with Anthropic)",
+  "type": "module",
+  "bin": {
+    "plan2api": "bin/plan2api.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "node bin/plan2api.js start",
+    "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "api",
+    "local",
+    "proxy",
+    "cli",
+    "api-key"
+  ],
+  "author": "Upendra237",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Upendra237/plan2api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Upendra237/plan2api/issues"
+  },
+  "homepage": "https://github.com/Upendra237/plan2api",
+  "devDependencies": {
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10"
+  }
+}

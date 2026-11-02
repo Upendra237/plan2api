@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Local plan2api data and secrets (never commit keys)
+.plan2api/
+keys.json
+*.key
+*.pem
+.env
+.env.*
+
+# Background server runtime files
+*.pid
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build / test output
+coverage/
+*.tgz
+
+# Personal scratch scripts (the project's tests are test/*.test.js)
+test/*.py
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
