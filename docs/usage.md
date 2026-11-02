@@ -1,8 +1,12 @@
 # Usage
 
-plan2api turns your own logged-in [Claude Code](https://code.claude.com/docs/en/overview) into a
-small local API that speaks the shape of Anthropic's Messages API. Your own scripts and apps can
-then call Claude through it, with API keys you create and can revoke at any time.
+Turn the Claude plan you already have into a private, Anthropic-compatible text API that works with
+the official SDKs.
+
+plan2api does this with a small local server that speaks the shape of Anthropic's Messages API and
+answers each request through your own logged-in
+[Claude Code](https://code.claude.com/docs/en/overview). Your own scripts and apps can then call
+Claude through it, with API keys you create and can revoke at any time.
 
 > **Unofficial.** plan2api is not affiliated with, endorsed by, or sponsored by Anthropic. It is
 > meant for **personal use on your own machine with your own Claude login**, and your use is subject

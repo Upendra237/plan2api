@@ -1,7 +1,7 @@
 {
   "name": "plan2api",
   "version": "0.1.0",
-  "description": "Turn your own logged-in Claude Code into a local API (unofficial, not affiliated with Anthropic)",
+  "description": "Turn the Claude plan you already have into a private, Anthropic-compatible text API that works with the official SDKs.",
   "type": "module",
   "bin": {
     "plan2api": "bin/plan2api.js"

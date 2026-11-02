@@ -4,7 +4,8 @@
 [![npm version](https://img.shields.io/npm/v/plan2api.svg)](https://www.npmjs.com/package/plan2api)
 [![License: MIT](https://img.shields.io/github/license/Upendra237/plan2api)](https://github.com/Upendra237/plan2api/blob/main/LICENSE)
 
-Turn your own logged-in Claude Code into a local API.
+Turn the Claude plan you already have into a private, Anthropic-compatible text API that works with
+the official SDKs.
 
 > **Disclaimer.** plan2api is an **unofficial** project and is **not affiliated with, endorsed by,
 > or sponsored by Anthropic**. "Claude" and "Claude Code" are trademarks of Anthropic. plan2api is

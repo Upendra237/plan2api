@@ -13,7 +13,8 @@ import { Plan2ApiError } from './errors.js';
 import { createKey, deleteKey, getKeysPath, listKeys } from './keys.js';
 import { DEFAULTS, isLoopbackHost, startServer } from './server.js';
 
-const HELP = `plan2api - turn your own logged-in Claude Code into a local API
+const HELP = `plan2api - Turn the Claude plan you already have into a private, Anthropic-compatible
+text API that works with the official SDKs.
 
 Unofficial. Not affiliated with Anthropic.
 
