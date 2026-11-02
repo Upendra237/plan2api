@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- On Linux and macOS, `plan2api doctor` stopped with an error when the data directory path went
+  through a regular file (the system reports `ENOTDIR` there, Windows reports `ENOENT`). `ENOTDIR`
+  is now treated like a missing file everywhere (pid file, key file, log file, `claude` lookup), and
+  the doctor reports the problem as a failed check. A pid file that cannot be read (for example
+  because of its permissions) is now a failed check too, and the rest of the report is still printed.
+
 ## [0.1.0] - 2026-11-02
 
 First public release.

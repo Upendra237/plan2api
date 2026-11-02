@@ -2,7 +2,7 @@ import { spawn as nodeSpawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Plan2ApiError } from './errors.js';
+import { isMissingPathError, Plan2ApiError } from './errors.js';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const MODEL_PATTERN = /^[A-Za-z0-9._-]+$/;
@@ -267,7 +267,7 @@ function execute({ file, args, input, cwd, timeoutMs, signal, spawn }) {
     child.on('error', (err) => {
       finish(
         reject,
-        err.code === 'ENOENT'
+        isMissingPathError(err)
           ? notFound()
           : new ClaudeError('failed', `Could not start Claude Code: ${err.message}`),
       );

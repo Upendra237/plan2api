@@ -14,7 +14,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isEffortLevel } from './claude.js';
-import { Plan2ApiError } from './errors.js';
+import { isMissingPathError, Plan2ApiError } from './errors.js';
 import { getConfigDir } from './keys.js';
 import { describeListenError, probePort as defaultProbePort } from './server.js';
 
@@ -84,7 +84,7 @@ export function readPidRecord() {
   try {
     text = readFileSync(getPidPath(), 'utf8');
   } catch (err) {
-    if (err.code === 'ENOENT') return { exists: false, record: null };
+    if (isMissingPathError(err)) return { exists: false, record: null };
     throw new Plan2ApiError(`Could not read ${getPidPath()}: ${err.message}`);
   }
   try {
@@ -103,7 +103,11 @@ export function writePidRecord({ pid, host, port, startedAt, effort }) {
     writeFileSync(tmp, `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 });
     renameSync(tmp, getPidPath());
   } catch (err) {
-    rmSync(tmp, { force: true });
+    try {
+      rmSync(tmp, { force: true });
+    } catch {
+      // Best effort: a failed clean-up must not hide why the write failed.
+    }
     throw err;
   }
 }
@@ -120,7 +124,7 @@ export function capLog(file, { maxBytes = MAX_LOG_BYTES, keepBytes = KEEP_LOG_BY
   try {
     size = statSync(file).size;
   } catch (err) {
-    if (err.code === 'ENOENT') return false;
+    if (isMissingPathError(err)) return false;
     throw err;
   }
   if (size <= maxBytes) return false;

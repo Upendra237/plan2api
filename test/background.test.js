@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { failFs, restoreFs } from '../fixtures/fs-fault.js';
 import {
   capLog,
   fetchHealth,
@@ -58,6 +59,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  restoreFs();
   for (const child of processes.splice(0)) {
     try {
       child.kill('SIGKILL');
@@ -197,6 +199,47 @@ describe('pid file', () => {
     assert.deepEqual(readPidRecord(), { exists: false, record: null });
   });
 
+  // A path that goes through a regular file is ENOENT on Windows but ENOTDIR on Linux and macOS.
+  // The errors are faked so that every platform checks both.
+  for (const code of ['ENOENT', 'ENOTDIR']) {
+    it(`reports a missing file when reading it fails with ${code}`, () => {
+      failFs('readFileSync', /server\.pid$/, code);
+      assert.deepEqual(readPidRecord(), { exists: false, record: null });
+    });
+  }
+
+  for (const code of ['EACCES', 'EISDIR', 'EPERM']) {
+    it(`still raises an error when reading the pid file fails with ${code}`, () => {
+      failFs('readFileSync', /server\.pid$/, code);
+      assert.throws(
+        () => readPidRecord(),
+        (err) =>
+          err instanceof Plan2ApiError && /^Could not read .*server\.pid: /.test(err.message),
+      );
+    });
+  }
+
+  it('finds no server when the data directory is inside a regular file (for real)', async () => {
+    writeFileSync(join(sandbox, 'a-file'), 'x');
+    process.env.PLAN2API_HOME = join(sandbox, 'a-file', 'inside');
+    assert.deepEqual(readPidRecord(), { exists: false, record: null });
+    assert.deepEqual(await inspectServer(), { state: 'stopped' });
+  });
+
+  it('inspectServer says stopped when the pid file path reports ENOTDIR', async () => {
+    failFs('readFileSync', /server\.pid$/, 'ENOTDIR');
+    assert.deepEqual(await inspectServer(), { state: 'stopped' });
+  });
+
+  it('writing the pid file fails cleanly even when removing its temp file fails too', () => {
+    failFs('renameSync', /server\.pid/, 'EACCES');
+    failFs('rmSync', /\.tmp$/, 'ENOTDIR');
+    assert.throws(
+      () => writePidRecord(record()),
+      (err) => err.code === 'EACCES',
+    );
+  });
+
   it('treats anything it cannot understand as present but invalid', () => {
     const bad = [
       '{ not json',
@@ -256,6 +299,23 @@ describe('log file', () => {
     writeFileSync(file, numbered(10));
     assert.equal(capLog(file), false);
     assert.equal(readFileSync(file, 'utf8'), numbered(10));
+  });
+
+  for (const code of ['ENOENT', 'ENOTDIR']) {
+    it(`is left alone when looking at it fails with ${code}`, () => {
+      const file = join(sandbox, 'gone.log');
+      failFs('statSync', /gone\.log$/, code);
+      assert.equal(capLog(file), false);
+    });
+  }
+
+  it('still raises other problems with the log file', () => {
+    const file = join(sandbox, 'locked.log');
+    failFs('statSync', /locked\.log$/, 'EACCES');
+    assert.throws(
+      () => capLog(file),
+      (err) => err.code === 'EACCES',
+    );
   });
 
   it('keeps only the last part (whole lines) once it is over 5 MB', () => {

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PassThrough } from 'node:stream';
 import { afterEach, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
@@ -460,6 +462,42 @@ describe('runClaude (against a fake claude process)', () => {
     const missing = () => ({ file: 'plan2api-no-such-program', prefixArgs: [] });
     await assertClaudeError(runClaude({ prompt: 'hi' }, { resolveClaude: missing }), 'not_found');
   });
+
+  // The operating system picks the code: ENOENT for a program that is not there, and ENOTDIR on
+  // Linux and macOS when a folder in its path is really a file. The error is faked so that every
+  // platform checks all of them.
+  const spawnFailingWith = (code) => () => {
+    const child = new EventEmitter();
+    Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough() });
+    child.stderr = new PassThrough();
+    child.kill = () => {};
+    queueMicrotask(() =>
+      child.emit('error', Object.assign(new Error(`spawn x ${code}`), { code })),
+    );
+    return child;
+  };
+
+  for (const code of ['ENOENT', 'ENOTDIR']) {
+    it(`reports a program that cannot be found (${code}) as not_found`, async () => {
+      await assertClaudeError(
+        runClaude({ prompt: 'hi' }, { ...deps, spawn: spawnFailingWith(code) }),
+        'not_found',
+      );
+      await assertClaudeError(
+        getClaudeVersion({ ...deps, spawn: spawnFailingWith(code) }),
+        'not_found',
+      );
+    });
+  }
+
+  for (const code of ['EACCES', 'EPERM']) {
+    it(`reports a program that cannot be started (${code}) as failed, not as missing`, async () => {
+      await assertClaudeError(
+        runClaude({ prompt: 'hi' }, { ...deps, spawn: spawnFailingWith(code) }),
+        'failed',
+      );
+    });
+  }
 });
 
 describe('the model that answered (against a fake claude process)', () => {

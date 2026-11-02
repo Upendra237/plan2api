@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
+import { failFs, restoreFs } from '../fixtures/fs-fault.js';
 import {
   createKey,
   deleteKey,
@@ -26,6 +27,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  restoreFs();
   if (previousHome === undefined) delete process.env.PLAN2API_HOME;
   else process.env.PLAN2API_HOME = previousHome;
   rmSync(sandbox, { recursive: true, force: true });
@@ -43,6 +45,50 @@ describe('getConfigDir', () => {
     process.env.PLAN2API_HOME = '';
     assert.match(getConfigDir(), /[\\/]\.plan2api$/);
     assert.equal(isAbsolute(getConfigDir()), true);
+  });
+});
+
+describe('a key file that is not there', () => {
+  // The same situation is ENOENT on Windows and ENOTDIR on Linux and macOS (a folder in the path
+  // is a file), so the error is faked and the outcome must not depend on the operating system.
+  for (const code of ['ENOENT', 'ENOTDIR']) {
+    it(`means no keys when reading it fails with ${code}, and nobody gets in`, () => {
+      createKey('real');
+      failFs('readFileSync', /keys\.json$/, code);
+      assert.deepEqual(listKeys(), []);
+      assert.equal(verifyKey('p2a_anything'), null);
+    });
+  }
+
+  for (const code of ['EACCES', 'EISDIR', 'EPERM']) {
+    it(`is still an error when reading it fails with ${code}`, () => {
+      createKey('real');
+      failFs('readFileSync', /keys\.json$/, code);
+      assert.throws(
+        () => listKeys(),
+        (err) => err instanceof KeyError && /^Could not read .*keys\.json: /.test(err.message),
+      );
+      assert.throws(() => verifyKey('p2a_anything'), KeyError, 'it must not let anyone in');
+    });
+  }
+
+  it('also works for real when the data directory is inside a regular file', () => {
+    writeFileSync(join(sandbox, 'a-file'), 'x');
+    process.env.PLAN2API_HOME = join(sandbox, 'a-file', 'inside');
+    assert.deepEqual(listKeys(), []);
+    assert.throws(
+      () => createKey('nope'),
+      (err) => err instanceof KeyError && /^Could not write /.test(err.message),
+    );
+  });
+
+  it('reports a failed write as a KeyError even when the clean-up fails too', () => {
+    failFs('rmSync', /\.tmp$/, 'ENOTDIR');
+    failFs('mkdirSync', /home$/, 'ENOTDIR');
+    assert.throws(
+      () => createKey('nope'),
+      (err) => err instanceof KeyError && /^Could not write .*ENOTDIR/.test(err.message),
+    );
   });
 });
 

@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { Plan2ApiError } from './errors.js';
+import { isMissingPathError, Plan2ApiError } from './errors.js';
 
 const KEY_PREFIX = 'p2a_';
 
@@ -68,7 +68,7 @@ function readStore() {
   try {
     raw = readFileSync(file, 'utf8');
   } catch (err) {
-    if (err.code === 'ENOENT') return { version: STORE_VERSION, keys: [] };
+    if (isMissingPathError(err)) return { version: STORE_VERSION, keys: [] };
     throw new KeyError(`Could not read ${file}: ${err.message}`);
   }
 
@@ -97,7 +97,11 @@ function writeStore(store) {
     writeFileSync(tmp, `${JSON.stringify(store, null, 2)}\n`, { mode: 0o600, flag: 'wx' });
     renameSync(tmp, file);
   } catch (err) {
-    rmSync(tmp, { force: true });
+    try {
+      rmSync(tmp, { force: true });
+    } catch {
+      // Best effort: a failed clean-up must not hide why the write failed.
+    }
     throw new KeyError(`Could not write ${file}: ${err.message}`);
   }
 }

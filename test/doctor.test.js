@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
+import { failFs, restoreFs } from '../fixtures/fs-fault.js';
 import { ClaudeError } from '../src/claude.js';
 import { checkNode, checkPort, quickChecks, runDoctor } from '../src/doctor.js';
 import { createKey, getKeysPath } from '../src/keys.js';
@@ -18,6 +19,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  restoreFs();
   if (previousHome === undefined) delete process.env.PLAN2API_HOME;
   else process.env.PLAN2API_HOME = previousHome;
   rmSync(sandbox, { recursive: true, force: true });
@@ -131,6 +133,48 @@ describe('runDoctor', () => {
     assert.equal(code, 1);
     assert.match(output, /✗ Data directory .* is not writable/);
     assert.match(output, /Fix: .*PLAN2API_HOME/);
+  });
+
+  // A data directory path that goes through a regular file is ENOENT on Windows and ENOTDIR on
+  // Linux and macOS. Both are faked here, so every platform runs the Linux case.
+  for (const code of ['ENOENT', 'ENOTDIR']) {
+    it(`reports a data directory problem as a failed check, not a crash (${code})`, async () => {
+      failFs('mkdirSync', /home$/, code);
+      failFs('readFileSync', /(server\.pid|keys\.json)$/, code);
+      const { code: exitCode, output } = await doctor();
+      assert.equal(exitCode, 1);
+      assert.match(output, new RegExp(`✗ Data directory .* is not writable \\(${code}\\)`));
+      assert.match(output, /Fix: .*PLAN2API_HOME/);
+      assert.match(output, /- No background server is running/);
+      assert.match(output, /1 check failed/);
+    });
+  }
+
+  it('reports a pid file it cannot read as a failed check, and still prints the rest', async () => {
+    createKey('one');
+    failFs('readFileSync', /server\.pid$/, 'EACCES');
+    const { code, output } = await doctor();
+    assert.equal(code, 1);
+    assert.match(output, /✓ Node\.js /);
+    assert.match(output, /✓ Data directory .*is writable; 1 key/);
+    assert.match(output, /✗ Could not read .*server\.pid: .*EACCES/);
+    assert.match(output, /Fix: Fix the permissions on .*server\.pid/);
+    assert.match(output, /✓ Port \d+ is free/);
+    assert.match(output, /1 check failed/);
+  });
+
+  it('does not hide a bug: an error that is not a Plan2ApiError still propagates', async () => {
+    await assert.rejects(
+      doctor(
+        {},
+        {
+          inspectServer: async () => {
+            throw new TypeError('a real bug');
+          },
+        },
+      ),
+      TypeError,
+    );
   });
 
   it('fails when the key file is corrupt', async () => {

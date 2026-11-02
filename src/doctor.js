@@ -7,7 +7,13 @@ import {
   INSTALL_COMMAND,
   runClaude as defaultRunClaude,
 } from './claude.js';
-import { formatDuration, formatUrl, inspectServer as defaultInspectServer } from './background.js';
+import {
+  formatDuration,
+  formatUrl,
+  getPidPath,
+  inspectServer as defaultInspectServer,
+} from './background.js';
+import { Plan2ApiError } from './errors.js';
 import { getConfigDir, getKeysPath, KeyError, listKeys } from './keys.js';
 import { DEFAULTS, probePort } from './server.js';
 
@@ -96,8 +102,24 @@ function checkDataDir() {
   }
 }
 
+/**
+ * Looks for a background server. A pid file that cannot be read (for example a data directory
+ * owned by another user) comes back as the state `unreadable`, so the doctor can report it.
+ */
+async function inspectBackground(inspectServer) {
+  try {
+    return await inspectServer();
+  } catch (err) {
+    if (!(err instanceof Plan2ApiError)) throw err;
+    return { state: 'unreadable', reason: err.message };
+  }
+}
+
 /** Reports whether a server started with `plan2api start --background` is running. */
 function checkBackground(info, now = Date.now()) {
+  if (info.state === 'unreadable') {
+    return fail(info.reason, `Fix the permissions on ${getPidPath()} and the folder it is in.`);
+  }
   if (info.state === 'running') {
     const { pid, host, port, startedAt } = info.record;
     const uptime = formatDuration(now - Date.parse(startedAt));
@@ -170,7 +192,7 @@ export async function runDoctor(
     }),
   );
   results.push(checkDataDir());
-  const background = await (deps.inspectServer ?? defaultInspectServer)();
+  const background = await inspectBackground(deps.inspectServer ?? defaultInspectServer);
   results.push(checkBackground(background, deps.now?.()));
   results.push(await checkPort(port, DEFAULTS.host, background));
 
