@@ -507,6 +507,10 @@ about 100 seconds, so with a tunnel keep `--timeout` below that (for example `--
 Once your endpoint is public, anyone who has a key can use your Claude login, so treat keys like
 passwords, give each app its own key, and delete the ones you no longer need.
 
+To try plan2api from other machines without a domain of your own, see
+[Docker Sandboxes](docker-sandboxes.md): it runs plan2api in a cloud sandbox behind an HTTPS URL that
+Docker publishes.
+
 ## Security notes
 
 - **Call it from your server, never from a browser or a mobile app.** An API key placed in
