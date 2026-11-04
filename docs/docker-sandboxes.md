@@ -32,18 +32,8 @@ winget install Docker.sbx
 Windows does not refresh `PATH` in a terminal that is already open, so open a fresh terminal after
 installing.
 
-**macOS:**
-
-```sh
-brew install docker/tap/sbx
-```
-
-**Linux:**
-
-```sh
-curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-sudo apt-get install docker-sbx
-```
+On macOS and Linux, follow the steps in
+[Install Docker Sandboxes](https://docs.docker.com/ai/sandboxes/install/).
 
 Then log in:
 
@@ -53,11 +43,14 @@ sbx login
 
 ## Run plan2api in a cloud sandbox
 
-Create a cloud sandbox that uses the `shell` agent. Docker's documentation explains how in
+Create the sandbox in the Docker Agentic Platform web console: choose **New**, pick the `shell`
+agent, set compute to **Micro**, then choose **Run**. It opens a terminal in your browser. If you
+prefer the `sbx` command line, see Docker's
 [Use cloud sandboxes](https://docs.docker.com/ai/sandboxes/cloud/usage/) and
-[Shell](https://docs.docker.com/ai/sandboxes/agents/shell/). The shell image includes Node.js and
-git but no agent binary, so you install plan2api and Claude Code yourself. plan2api needs Node.js 20
-or newer.
+[Shell](https://docs.docker.com/ai/sandboxes/agents/shell/) pages.
+
+The shell image includes Node.js and git but no agent binary, so you install plan2api and Claude
+Code yourself. plan2api needs Node.js 20 or newer.
 
 Then, inside the sandbox:
 
