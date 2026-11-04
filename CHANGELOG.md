@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `docs/docker-sandboxes.md`: a guide to running plan2api in a Docker Sandboxes cloud sandbox and
+  reaching it over HTTPS from other machines, with its security and clean-up steps.
+
 ## [0.1.0] - 2026-11-02
 
 First public release.

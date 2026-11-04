@@ -208,6 +208,9 @@ Set `PLAN2API_HOME` to keep plan2api's data somewhere other than `~/.plan2api`, 
 [docs/usage.md](docs/usage.md) covers the API, examples in four languages, what is and is not
 supported, using your own domain, and security notes.
 
+[docs/docker-sandboxes.md](docs/docker-sandboxes.md) shows how to run plan2api in a Docker Sandboxes
+cloud sandbox and reach it over HTTPS from other machines.
+
 ## Contributing
 
 Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the
